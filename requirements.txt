@@ -1,0 +1,6 @@
+cloudpickle==2.0.0
+cvxpy==1.1.15
+gym==0.21.0
+highway-env==1.4
+numpy==1.21.2
+torch==1.9.1
