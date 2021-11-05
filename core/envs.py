@@ -3,42 +3,46 @@ import highway_env
 
 
 class Highway(highway_env.highway_env.envs.HighwayEnv):
-    def __init__(self, mode='train'):
-        super(highway_env.highway_env.envs.HighwayEnv, self).__init__()
-        self.mode = mode
-        self.default_config()
+    def __init__(self, mode='manual'):
+        super(Highway, self).__init__()
+        self.config_mode(mode)
         self.num_constraints = len(self.get_constraint_values())
 
-    @classmethod
-    def default_config(cls) -> dict:
-        config = super().default_config()
-        config.update({
+
+    def config_mode(self, mode):
+        self.config.update({
             "observation": {
                 "type": "Kinematics",
                 "absolute": False,
             },
-            # "action": {
-            #     "type": "ContinuousAction",
-            # },
             "lanes_count": 4,
             "vehicles_count": 15,
             "policy_frequency": 10,
             "duration": 500,
-            "manual_control": True,
-            "offroad_terminal": True
+            "offroad_terminal": True,
         })
-        return config
-
-    @classmethod
-    def config_train(cls) -> dict:
-        config = super().default_config()
-        config.update({
-            "action": {
-                "type": "ContinuousAction",
-            },
-            "manual_control": False,
-        })
-        return config
+        if mode == 'manual':
+            self.configure({
+                "action": {
+                    "type": "DiscreteAction",
+                },
+                "manual_control": True
+            })
+        elif mode == 'continuous':
+            self.configure({
+                "action": {
+                    "type": "ContinuousAction",
+                },
+                "manual_control": False
+            })
+        elif mode == 'discrete':
+            self.config.update({
+                "action": {
+                    "type": "DiscreteMetaAction",
+                },
+                "manual_control": False
+            })
+        self.reset()
 
     def get_long_distance(self):
         '''returns longitudinal distance to closest car in front of ego vehicle'''
