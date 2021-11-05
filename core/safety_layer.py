@@ -11,7 +11,7 @@ def for_each(f, l):
         f(x)
 
 class SafetyLayer:
-    def __init__(self, env, buffer_size, n_epochs=10, batch_size=32, lr=1e-4, layer_dims=[64, 20]):
+    def __init__(self, env, buffer_size, n_epochs=10, batch_size=32, lr=1e-4, layer_dims=[64, 20], env_mode='manual'):
         self.env = env
         self.lr = lr  # learning rate
         self.layer_dims = layer_dims
@@ -20,6 +20,7 @@ class SafetyLayer:
         self.n_epochs = n_epochs
         self.batch_size = batch_size
         self.n_constraints = 0
+        self.models = None
 
     @staticmethod
     def _batch_as_tensor(batch):
@@ -42,7 +43,7 @@ class SafetyLayer:
             if done:
                 observation = self.env.reset()
             c = self.env.get_constraint_values()
-            observation_next, _, done, _ = self.env.step(0)
+            observation_next, _, done, _ = self.env.step(self.env.action_space.sample())
             c_next = self.env.get_constraint_values()
             self.env.render()
             self.buffer.add({
@@ -101,4 +102,6 @@ class SafetyLayer:
     def load_buffer(self, path):
         file_handler = open(path, 'rb')
         self.buffer = pickle.load(file_handler)
+        if self.models is None:
+            self._create_models()
         print('Loaded buffer from', path)
