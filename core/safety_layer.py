@@ -37,7 +37,7 @@ class SafetyLayer:
         self.optimizers = [torch.optim.Adam(model.parameters(), lr=self.lr) for model in self.models]
         self.n_constraints = len(self.models)
 
-    def collect_samples(self):
+    def collect_samples(self, render=True):
         done = True
         for i in range(self.buffer_size):
             if done:
@@ -45,7 +45,8 @@ class SafetyLayer:
             c = self.env.get_constraint_values()
             observation_next, _, done, _ = self.env.step(self.env.action_space.sample())
             c_next = self.env.get_constraint_values()
-            self.env.render()
+            if render:
+                self.env.render()
             self.buffer.add({
                 "action": np.array(list(self.env.vehicle.action.values())),
                 "observation": observation.flatten(),  # observation represented as an 1D array
