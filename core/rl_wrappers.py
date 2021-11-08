@@ -5,10 +5,10 @@ from stable_baselines3.common.noise import ActionNoise
 
 
 class SafeDDPG(DDPG):
-    def __init__(self, policy, env, safety_layer, verbose=0):
-        super(SafeDDPG, self).__init__(policy, env, verbose=verbose)
-        self.safety_layer = safety_layer
-        self.real_env = env  # because stables_baselines create a dummy representation
+    def __init__(self, *args, **kwargs):
+        self.safety_layer = kwargs.pop('safety_layer')
+        super(SafeDDPG, self).__init__(*args, **kwargs)
+        self.real_env = args[1]  # because stables_baselines create a dummy representation
 
     def _sample_action(
             self, learning_starts: int, action_noise: Optional[ActionNoise] = None

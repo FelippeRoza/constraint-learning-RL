@@ -22,10 +22,10 @@ safe_layer.train()
 env.config_mode('continuous')
 time_steps = 500
 
-rl_agent = DDPG("MlpPolicy", env, verbose=1)
-rl_agent.learn(total_timesteps=time_steps)
+rl_agent = DDPG("MlpPolicy", env, verbose=1, tensorboard_log="data/tensorboard/")
+rl_agent.learn(total_timesteps=time_steps, tb_log_name="DDPG")
 rl_agent.save("data/DDPG")
 
-safe_rl_agent = SafeDDPG("MlpPolicy", env, safe_layer, verbose=1)
-safe_rl_agent.learn(total_timesteps=time_steps)
+safe_rl_agent = SafeDDPG("MlpPolicy", env, safety_layer=safe_layer, verbose=1, tensorboard_log="data/tensorboard/")
+safe_rl_agent.learn(total_timesteps=time_steps, tb_log_name="SafeDDPG")
 safe_rl_agent.save("data/safe_DDPG")
