@@ -2,6 +2,7 @@ from stable_baselines3 import DDPG
 import numpy as np
 from typing import Optional, Tuple
 from stable_baselines3.common.noise import ActionNoise
+from stable_baselines3.common.callbacks import BaseCallback
 
 
 class SafeDDPG(DDPG):
@@ -20,3 +21,29 @@ class SafeDDPG(DDPG):
         safe_action = self.safety_layer.get_safe_action(obs, action[0], c)
         safe_action = np.expand_dims(safe_action, axis=0)
         return safe_action, buffer_action
+
+
+class TensorboardCallback(BaseCallback):
+    """
+    Custom callback for plotting additional values in tensorboard.
+    """
+
+    def __init__(self, env, verbose=0):
+        super(TensorboardCallback, self).__init__(verbose)
+        self.env = env
+        self.cum_violations = np.zeros(env.num_constraints)
+        self.episode_c = [[] for i in range(self.env.num_constraints)]
+
+    def _on_step(self) -> bool:
+        c = self.env.get_constraint_values()
+        for i, c in enumerate(c):
+            self.episode_c[i].append(c)
+            if c > 0:
+                self.cum_violations[i] += 1
+            self.logger.record('c'+str(i)+'_cum_violations', self.cum_violations[i])
+        return True
+
+    def _on_rollout_end(self) -> None:
+        for i, c in enumerate(self.episode_c):
+            self.logger.record('c' + str(i) + '_max', np.max(c))
+        self.episode_c = [[] for i in range(self.env.num_constraints)]

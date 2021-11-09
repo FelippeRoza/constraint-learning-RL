@@ -1,6 +1,6 @@
 from core.safety_layer import SafetyLayer
 from core.envs import Highway
-from core.rl_wrappers import SafeDDPG
+from core.rl_wrappers import SafeDDPG, TensorboardCallback
 from stable_baselines3 import DDPG
 
 # config
@@ -23,9 +23,9 @@ env.config_mode('continuous')
 time_steps = 500
 
 rl_agent = DDPG("MlpPolicy", env, verbose=1, tensorboard_log="data/tensorboard/")
-rl_agent.learn(total_timesteps=time_steps, tb_log_name="DDPG")
+rl_agent.learn(total_timesteps=time_steps, tb_log_name="DDPG", callback=TensorboardCallback(env))
 rl_agent.save("data/DDPG")
 
 safe_rl_agent = SafeDDPG("MlpPolicy", env, safety_layer=safe_layer, verbose=1, tensorboard_log="data/tensorboard/")
-safe_rl_agent.learn(total_timesteps=time_steps, tb_log_name="SafeDDPG")
+safe_rl_agent.learn(total_timesteps=time_steps, tb_log_name="SafeDDPG", callback=TensorboardCallback(env))
 safe_rl_agent.save("data/safe_DDPG")
