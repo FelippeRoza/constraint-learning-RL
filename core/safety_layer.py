@@ -2,6 +2,7 @@ import numpy as np
 import pickle
 import torch
 import cvxpy as cp
+import os
 
 from core.replay_buffer import ReplayBuffer
 from core.net import Net
@@ -96,6 +97,7 @@ class SafetyLayer:
                 print('Loss model', i, 'epoch', epoch, ':', np.mean(loss_list))
 
     def save_buffer(self, path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         file_handler = open(path, 'wb')
         pickle.dump(self.buffer, file_handler)
         print('Saved buffer at', path)
