@@ -40,10 +40,10 @@ class TensorboardCallback(BaseCallback):
             self.episode_c[i].append(c)
             if c > 0:
                 self.cum_violations[i] += 1
-            self.logger.record('c'+str(i)+'_cum_violations', self.cum_violations[i])
+            self.logger.record('safety/c'+str(i)+'_cum_violations', self.cum_violations[i])
         return True
 
     def _on_rollout_end(self) -> None:
         for i, c in enumerate(self.episode_c):
-            self.logger.record('c' + str(i) + '_max', np.max(c))
+            self.logger.record('safety/c' + str(i) + '_max', np.max(c))
         self.episode_c = [[] for i in range(self.env.num_constraints)]
