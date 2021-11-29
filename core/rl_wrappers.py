@@ -22,6 +22,18 @@ class SafeDDPG(DDPG):
         safe_action = np.expand_dims(safe_action, axis=0)
         return safe_action, buffer_action
 
+    def load(self, path):
+        raise Exception('Load not defined')
+
+    def save(self, *args, **kwargs):
+        real_env = self.real_env
+        safety_layer = self.safety_layer
+        delattr(self, 'real_env')  # quick and dirty solution
+        delattr(self, 'safety_layer')
+        super(SafeDDPG, self).save(*args, **kwargs)
+        self.real_env = real_env
+        self.safety_layer = safety_layer
+
 
 class TensorboardCallback(BaseCallback):
     """
