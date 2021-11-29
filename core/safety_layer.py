@@ -4,13 +4,16 @@ import torch
 import cvxpy as cp
 import os
 from tqdm import tqdm
+import glob
 
 from core.replay_buffer import ReplayBuffer
 from core.net import Net
 
+
 def for_each(f, l):
     for x in l:
         f(x)
+
 
 class SafetyLayer:
     def __init__(self, env, buffer_size, n_epochs=10, batch_size=32, lr=1e-4, layer_dims=[64, 20], env_mode='manual'):
@@ -111,3 +114,15 @@ class SafetyLayer:
             self._create_models()
         self.buffer_size = len(self.buffer)
         print('Loaded buffer from', path)
+
+    def save(self, path):
+        for i, model in enumerate(self.models):
+            torch.save(model, path + '_' + str(i) + '.pth')
+
+    def load(self, path):
+        list_models = glob.glob(path + '*.pth')
+        if not list_models:
+            raise Exception('No Safety Layer model in ' + path)
+        self.models = []
+        for model_path in list_models:
+            self.models.append(torch.load(model_path))
