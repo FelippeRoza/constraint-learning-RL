@@ -3,6 +3,7 @@ import pickle
 import torch
 import cvxpy as cp
 import os
+from tqdm import tqdm
 
 from core.replay_buffer import ReplayBuffer
 from core.net import Net
@@ -40,7 +41,8 @@ class SafetyLayer:
 
     def collect_samples(self, render=True):
         done = True
-        for i in range(self.buffer_size):
+        print('Started collecting samples')
+        for i in tqdm(range(self.buffer_size)):
             if done:
                 observation = self.env.reset()
             c = self.env.get_constraint_values()
@@ -107,4 +109,5 @@ class SafetyLayer:
         self.buffer = pickle.load(file_handler)
         if self.models is None:
             self._create_models()
+        self.buffer_size = len(self.buffer)
         print('Loaded buffer from', path)
