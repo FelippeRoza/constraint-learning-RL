@@ -126,3 +126,4 @@ class SafetyLayer:
         self.models = []
         for model_path in list_models:
             self.models.append(torch.load(model_path))
+        self.n_constraints = len(self.models)
