@@ -3,7 +3,10 @@ import numpy as np
 from typing import Optional, Tuple
 from stable_baselines3.common.noise import ActionNoise
 from stable_baselines3.common.callbacks import BaseCallback
-
+from stable_baselines3.common.evaluation import evaluate_policy
+from stable_baselines3.common.logger import Video
+from typing import Any, Dict
+import torch
 
 class SafeDDPG(DDPG):
     def __init__(self, *args, **kwargs):
@@ -40,11 +43,12 @@ class TensorboardCallback(BaseCallback):
     Custom callback for plotting additional values in tensorboard.
     """
 
-    def __init__(self, env, verbose=0):
+    def __init__(self, env, verbose=0, video_freq=10000):
         super(TensorboardCallback, self).__init__(verbose)
         self.env = env
         self.cum_violations = np.zeros(env.num_constraints)
         self.episode_c = [[] for i in range(self.env.num_constraints)]
+        self._render_freq = video_freq
 
     def _on_step(self) -> bool:
         c = self.env.get_constraint_values()
@@ -53,6 +57,26 @@ class TensorboardCallback(BaseCallback):
             if c > 0:
                 self.cum_violations[i] += 1
             self.logger.record('safety/c'+str(i)+'_cum_violations', self.cum_violations[i])
+
+        if self.n_calls % self._render_freq == 0:
+            screens = []
+            def grab_screens(_locals: Dict[str, Any], _globals: Dict[str, Any]) -> None:
+                screen = self.env.render(mode="rgb_array")
+                screens.append(screen.transpose(2, 0, 1))
+
+            evaluate_policy(
+                self.model,
+                self.env,
+                callback=grab_screens,
+                n_eval_episodes=2,
+                deterministic=True,
+            )
+            self.logger.record(
+                "trajectory/video",
+                Video(torch.ByteTensor([screens]), fps=1),
+                exclude=("stdout", "log", "json", "csv"),
+            )
+
         return True
 
     def _on_rollout_end(self) -> None:
