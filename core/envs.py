@@ -42,6 +42,10 @@ class Highway(highway_env.highway_env.envs.HighwayEnv):
                 },
                 "manual_control": False
             })
+        elif mode == 'headless':
+            self.config.update({
+                "offscreen_rendering": True
+            })
         self.reset()
 
     def get_long_distance(self):

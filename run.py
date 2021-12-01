@@ -29,6 +29,7 @@ safe_layer.save(os.path.join(exp_dir, 'SafetyLayer'))
 
 # train RL agent with safe actions
 env.config_mode('continuous')
+env.config_mode('headless')
 
 rl_agent = DDPG("MlpPolicy", env, verbose=1, tensorboard_log=os.path.join('experiments','tensorboard'))
 rl_agent.learn(total_timesteps=time_steps, tb_log_name="unsafe_" + exp_name, callback=TensorboardCallback(env))
