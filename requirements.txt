@@ -2,6 +2,7 @@ cloudpickle==2.0.0
 cvxpy==1.1.15
 gym==0.21.0
 highway-env==1.4
+moviepy==1.0.3
 numpy==1.21.2
 tensorboard==2.7.0
 torch==1.9.1
