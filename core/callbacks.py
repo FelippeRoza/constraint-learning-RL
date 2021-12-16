@@ -34,7 +34,7 @@ class TensorboardCallback(BaseCallback):
 
         if not self.env.on_road:
             self.out_of_road += 1
-        print(self.n_calls)
+
         self.logger.record('safety/cum_collisions', self.collisions)
         self.logger.record('safety/cum_out_of_road', self.out_of_road)
 
