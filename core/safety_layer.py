@@ -120,7 +120,7 @@ class SafetyLayer:
             torch.save(model, path + '_' + str(i) + '.pth')
 
     def load(self, path):
-        list_models = glob.glob(path + '*.pth')
+        list_models = glob.glob(os.path.join(path,'*.pth'))
         if not list_models:
             raise Exception('No Safety Layer model in ' + path)
         self.models = []
