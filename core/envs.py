@@ -3,12 +3,13 @@ import highway_env
 
 
 class Highway(highway_env.highway_env.envs.HighwayEnv):
-    def __init__(self, mode='manual'):
+    def __init__(self, mode='manual', safety_layer=None):
         super(Highway, self).__init__()
         self.config_mode(mode)
         self.num_constraints = len(self.get_constraint_values())
         self.crashed = False
         self.on_road = True
+        self.safety_layer = safety_layer
 
     def config_mode(self, mode):
         self.config.update({
@@ -50,10 +51,21 @@ class Highway(highway_env.highway_env.envs.HighwayEnv):
         self.reset()
 
     def step(self, action):
+        if self.safety_layer:
+            action = self.get_safe_action(action)
         obs, rew, done, info = super().step(action)
         self.crashed = info['crashed']
         self.on_road = self.vehicle.on_road
         return obs, rew, done, info
+
+    def add_safety_layer(self, safety_layer):
+        self.safety_layer = safety_layer
+
+    def get_safe_action(self, action):
+        obs = self.observation_type.observe()
+        c = self.get_constraint_values()
+        safe_action = self.safety_layer.get_safe_action(obs, action, c)
+        return safe_action
 
     def get_long_distance(self):
         '''returns longitudinal distance to closest car in front of ego vehicle'''
