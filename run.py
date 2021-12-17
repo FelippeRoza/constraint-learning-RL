@@ -3,6 +3,7 @@ from core.envs import Highway
 from core.callbacks import TensorboardCallback
 from stable_baselines3 import DDPG, PPO
 import argparse
+import distutils
 import os
 
 
@@ -10,8 +11,8 @@ parser = argparse.ArgumentParser(description='Constrained Learning RL.')
 parser.add_argument('--exp_name', default='exp1', help='name of the experiment.')
 parser.add_argument('--rl_alg', default='DDPG', choices=['DDPG', 'PPO'], help='RL training algorithm.')
 parser.add_argument('--train_steps', default=100000, type=int, help='RL algorithm training steps.')
-parser.add_argument('--headless', default=True, type=bool, help='No video output, suitable for running on a server.')
-parser.add_argument('--use_safety_layer', default=True, type=bool, help='Use a safety layer or not.')
+parser.add_argument('--headless', default='True', help='No video output, suitable for running on a server.')
+parser.add_argument('--use_safety_layer', default='True', help='Use a safety layer or not.')
 parser.add_argument('--sl_load_folder', default=None,
                     help='Folder with safety layer weights. If not given, a new safety layer will be trained.')
 parser.add_argument('--buffer_path', default=None, help='Path with buffer collected previously.')
@@ -25,10 +26,10 @@ exp_dir = os.path.join('experiments', args.rl_alg + '_' + args.exp_name)
 os.makedirs(exp_dir, exist_ok=True)
 
 env = Highway(mode='continuous', safety_layer=None)
-if args.headless:
+if bool(distutils.util.strtobool(args.headless)):
     env.config_mode('headless')
 
-if args.use_safety_layer:
+if bool(distutils.util.strtobool(args.use_safety_layer)):
     env.config_mode('discrete')
     safe_layer = SafetyLayer(env, args.buffer_size, n_epochs=args.n_epochs, batch_size=args.batch_size)
     if args.sl_load_folder:
