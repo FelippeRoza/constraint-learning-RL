@@ -1,7 +1,7 @@
 from core.safety_layer import SafetyLayer
 from core.envs import Highway
 from core.callbacks import TensorboardCallback
-from stable_baselines3 import DDPG, PPO
+from stable_baselines3 import DDPG, PPO, A2C
 import argparse
 import distutils
 import os
@@ -9,7 +9,7 @@ import os
 
 parser = argparse.ArgumentParser(description='Constrained Learning RL.')
 parser.add_argument('--exp_name', default='exp1', help='name of the experiment.')
-parser.add_argument('--rl_alg', default='DDPG', choices=['DDPG', 'PPO'], help='RL training algorithm.')
+parser.add_argument('--rl_alg', default='DDPG', choices=['DDPG', 'PPO', 'A2C'], help='RL training algorithm.')
 parser.add_argument('--train_steps', default=100000, type=int, help='RL algorithm training steps.')
 parser.add_argument('--headless', default='True', help='No video output, suitable for running on a server.')
 parser.add_argument('--use_safety_layer', default='True', help='Use a safety layer or not.')
@@ -56,6 +56,8 @@ if args.rl_alg == 'PPO':
     rl_agent = PPO("MlpPolicy", env, verbose=1, tensorboard_log=os.path.join('experiments', 'tensorboard'))
 elif args.rl_alg == 'DDPG':
     rl_agent = DDPG("MlpPolicy", env, verbose=1, tensorboard_log=os.path.join('experiments', 'tensorboard'))
+elif args.rl_alg == 'A2C':
+    rl_agent = A2C("MlpPolicy", env, verbose=1, tensorboard_log=os.path.join('experiments', 'tensorboard'))
 
 rl_agent.learn(total_timesteps=args.train_steps, tb_log_name=safety_status + args.rl_alg + args.exp_name,
                callback=TensorboardCallback(env))
