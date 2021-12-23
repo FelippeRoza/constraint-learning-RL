@@ -22,4 +22,4 @@ class Net(Module):
         for layer in self._layers:
             out = F.relu(layer(out))
 
-        return out
+        return out.double()

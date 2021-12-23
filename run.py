@@ -15,7 +15,7 @@ parser.add_argument('--headless', default='True', help='No video output, suitabl
 parser.add_argument('--use_safety_layer', default='True', help='Use a safety layer or not.')
 parser.add_argument('--sl_load_folder', default=None,
                     help='Folder with safety layer weights. If not given, a new safety layer will be trained.')
-parser.add_argument('--buffer_path', default=None, help='Path with buffer collected previously.')
+parser.add_argument('--buffer_path', default='experiments/buffer/buffer.obj', help='Path with buffer collected previously.')
 parser.add_argument('--buffer_size', default=500000, type=int, help='Buffer size (number of samples).')
 parser.add_argument('--batch_size', default=256, type=int, help='Batch size for training safety layer.')
 parser.add_argument('--n_epochs', default=20, type=int, help='Number of epochs to train safety layer.')
@@ -31,17 +31,11 @@ if bool(distutils.util.strtobool(args.headless)):
 
 if bool(distutils.util.strtobool(args.use_safety_layer)):
     env.config_mode('discrete')
-    safe_layer = SafetyLayer(env, args.buffer_size, n_epochs=args.n_epochs, batch_size=args.batch_size)
+    safe_layer = SafetyLayer(env, buffer_size=args.buffer_size, buffer_path=args.buffer_path, n_epochs=args.n_epochs,
+                             batch_size=args.batch_size)
     if args.sl_load_folder:
         safe_layer.load(args.sl_load_folder)
     else:
-        if args.buffer_path is None:
-            buffer_path = os.path.join(exp_dir, 'buffer.obj')
-            safe_layer.collect_samples()  # not necessary if there is already a buffer saved
-            safe_layer.save_buffer(buffer_path)  # save buffer with collected samples
-            safe_layer.load_buffer(buffer_path)
-        else:
-            safe_layer.load_buffer(args.buffer_path)
         safe_layer.train()
         safe_layer.save(os.path.join(exp_dir, 'SafetyLayer'))
 

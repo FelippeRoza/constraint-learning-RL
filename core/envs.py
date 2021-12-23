@@ -17,10 +17,10 @@ class Highway(highway_env.highway_env.envs.HighwayEnv):
                 "type": "Kinematics",
                 "absolute": False,
             },
-            "lanes_count": 2,
+            "lanes_count": 3,
             "vehicles_count": 15,
-            # "policy_frequency": 10,
-            # "duration": 500,
+            "policy_frequency": 5,
+            "duration": 200,
             "offroad_terminal": True,
         })
         if mode == 'manual':
