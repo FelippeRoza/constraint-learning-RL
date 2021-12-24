@@ -16,6 +16,7 @@ parser.add_argument('--use_safety_layer', default='True', help='Use a safety lay
 parser.add_argument('--sl_load_folder', default=None,
                     help='Folder with safety layer weights. If not given, a new safety layer will be trained.')
 parser.add_argument('--buffer_path', default='experiments/buffer/buffer.obj', help='Path with buffer collected previously.')
+parser.add_argument('--n_workers', default=1, type=int, help='Number of parallel environments to collect samples from.')
 parser.add_argument('--buffer_size', default=500000, type=int, help='Buffer size (number of samples).')
 parser.add_argument('--batch_size', default=256, type=int, help='Batch size for training safety layer.')
 parser.add_argument('--n_epochs', default=20, type=int, help='Number of epochs to train safety layer.')
@@ -32,7 +33,7 @@ if bool(distutils.util.strtobool(args.headless)):
 if bool(distutils.util.strtobool(args.use_safety_layer)):
     env.config_mode('discrete')
     safe_layer = SafetyLayer(env, buffer_size=args.buffer_size, buffer_path=args.buffer_path, n_epochs=args.n_epochs,
-                             batch_size=args.batch_size)
+                             batch_size=args.batch_size, n_workers=args.n_workers)
     if args.sl_load_folder:
         safe_layer.load(args.sl_load_folder)
     else:

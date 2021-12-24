@@ -6,6 +6,8 @@ import cvxpy as cp
 import os
 from tqdm import tqdm
 import glob
+import multiprocessing
+from core.envs import Highway
 from core.dataset import HighwayDataset
 from core.net import Net
 
@@ -17,12 +19,13 @@ def for_each(f, l):
 
 class SafetyLayer:
     def __init__(self, env, buffer_size=10000, buffer_path='buffer.obj', n_epochs=10, batch_size=32,
-                 lr=1e-4, layer_dims=[64, 20], env_mode='manual'):
+                 lr=1e-4, layer_dims=[64, 20], n_workers=1):
         self.env = env
         self.lr = lr  # learning rate
         self.layer_dims = layer_dims
         self.buffer_size = buffer_size
         self.buffer_path = buffer_path
+        self.n_workers = n_workers
         self.n_epochs = n_epochs
         self.batch_size = batch_size
         self.n_constraints = 0
@@ -36,11 +39,12 @@ class SafetyLayer:
         self.optimizers = [torch.optim.Adam(model.parameters(), lr=self.lr) for model in self.models]
         self.n_constraints = len(self.models)
 
-    def collect_samples(self):
+    def sample_collection_worker(self, n_samples, config):
+        env = Highway(mode='continuous', safety_layer=None)
+        env.config.update(config)
         done = True
-        print('Started collecting samples')
-        buffer = {'action': [], 'observation': [], 'c': [], 'c_next': []}
-        for i in tqdm(range(self.buffer_size)):
+        a_list, s_list, c_list, c_next_list = [], [], [], []
+        for i in tqdm(range(n_samples)):
             if done:
                 observation = self.env.reset()
             c = self.env.get_constraint_values()
@@ -48,12 +52,32 @@ class SafetyLayer:
             c_next = self.env.get_constraint_values()
             self.env.render()
 
-            buffer['action'].append(np.array(list(self.env.vehicle.action.values())))
-            buffer['observation'].append(observation.flatten())
-            buffer['c'].append(c)
-            buffer['c_next'].append(c_next)
+            a_list.append(np.array(list(self.env.vehicle.action.values())))
+            s_list.append(observation.flatten())
+            c_list.append(c)
+            c_next_list.append(c_next)
 
             observation = observation_next
+
+        return {'action': a_list, 'observation': s_list, 'c': c_list, 'c_next': c_next_list}
+
+    def collect_samples(self):
+        print('Started collecting samples')
+        n_samples = int(self.buffer_size/self.n_workers)
+        config = self.env.config
+
+        with multiprocessing.Pool(processes=self.n_workers) as pool:
+            results = [pool.apply_async(self.sample_collection_worker, (n_samples, config, )) for i in range(self.n_workers)]
+            pool.close()
+            pool.join()
+        results = [result.get() for result in results]
+
+        buffer = {'action': [], 'observation': [], 'c': [], 'c_next': []}
+        for r in results:
+            buffer['action'].extend(r['action'])
+            buffer['observation'].extend(r['observation'])
+            buffer['c'].extend(r['c'])
+            buffer['c_next'].extend(r['c_next'])
         self.save_buffer(buffer)
 
     def get_safe_action(self, observation, action, const):
