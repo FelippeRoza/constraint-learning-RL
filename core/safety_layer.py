@@ -28,16 +28,15 @@ class SafetyLayer:
         self.n_workers = n_workers
         self.n_epochs = n_epochs
         self.batch_size = batch_size
-        self.n_constraints = 0
+        self.n_constraints = env.num_constraints
         self.models = None
 
-    def _create_models(self, obs_dim, action_dim):
+    def _create_model(self, obs_dim, action_dim):
         in_dim = obs_dim
-        out_dim = action_dim
+        out_dim = action_dim * self.n_constraints
 
-        self.models = [Net(in_dim=in_dim, out_dim=out_dim, layer_dims=self.layer_dims) for i in range(self.env.num_constraints)]
-        self.optimizers = [torch.optim.Adam(model.parameters(), lr=self.lr) for model in self.models]
-        self.n_constraints = len(self.models)
+        self.model = Net(in_dim=in_dim, out_dim=out_dim, layer_dims=self.layer_dims)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
 
     def sample_collection_worker(self, n_samples, config):
         env = Highway(mode='continuous', safety_layer=None)
@@ -82,8 +81,8 @@ class SafetyLayer:
 
     def get_safe_action(self, observation, action, const):
         obs, a, c = (torch.Tensor(observation), torch.Tensor(action), torch.Tensor(const))
-        g = [model(obs.view(1, -1)).squeeze() for model in self.models]
-        g = [x.detach().cpu().numpy() for x in g]
+        g = self.model(obs.view(1, -1)).view((c.shape[0], a.shape[0]))
+        g = g.detach().cpu().numpy()
 
         # TODO: use Lagrangian closed form solution when only one constraint is used
         # optimization problem
@@ -97,35 +96,35 @@ class SafetyLayer:
         return action_new
 
     def train(self):
+
         loss_fn = torch.nn.MSELoss()
         if not os.path.isfile(self.buffer_path):
             print('Buffer in', self.buffer_path, 'does not exist.')
             self.collect_samples()
 
         dataset = HighwayDataset(buffer_path=self.buffer_path)
-        self._create_models(dataset[1]['observation'].shape[0], dataset[1]['action'].shape[0])
+        self._create_model(dataset[1]['observation'].shape[0], dataset[1]['action'].shape[0])
 
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, num_workers=0)
-        print('deu')
+
         for epoch in range(self.n_epochs):
-            for i, model in enumerate(self.models):
-                loss_list = []
-                for i_batch, batch in enumerate(dataloader):
+            loss_list = []
+            for i_batch, batch in enumerate(dataloader):
 
-                    # compute loss
-                    action, obs, c, c_next = batch['action'], batch['observation'], batch['c'], batch['c_next']
-                    g = model(obs)
-                    c_next_pred = c[:, i] + torch.bmm(g.view(g.shape[0], 1, -1),
-                                                      action.view(action.shape[0], -1, 1)).squeeze()
-                    loss = loss_fn(c_next_pred, c_next[:, i])
+                # compute loss
+                action, obs, c, c_next = batch['action'], batch['observation'], batch['c'], batch['c_next']
+                g = self.model(obs)
+                c_next_pred = c + torch.bmm(g.view(g.shape[0], c.shape[1], action.shape[1]),
+                                                  action.view(action.shape[0], -1, 1)).squeeze()
+                loss = loss_fn(c_next_pred, c_next)
 
-                    # Backpropagation
-                    self.optimizers[i].zero_grad()
-                    loss.backward()
-                    self.optimizers[i].step()
-                    loss_list.append(np.asarray(loss.item()))
+                # Backpropagation
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
+                loss_list.append(np.asarray(loss.item()))
 
-                print('Loss model', i, 'epoch', epoch, ':', np.mean(loss_list))
+            print('Loss epoch', epoch, ':', np.mean(loss_list))
 
     def save_buffer(self, buffer):
         os.makedirs(os.path.dirname(self.buffer_path), exist_ok=True)
@@ -134,14 +133,9 @@ class SafetyLayer:
         print('Saved buffer at', self.buffer_path)
 
     def save(self, path):
-        for i, model in enumerate(self.models):
-            torch.save(model, path + '_' + str(i) + '.pth')
+        torch.save(self.model, path)
+        print('Saved safety layer model at', path)
 
     def load(self, path):
-        list_models = glob.glob(os.path.join(path,'*.pth'))
-        if not list_models:
-            raise Exception('No Safety Layer model in ' + path)
-        self.models = []
-        for model_path in list_models:
-            self.models.append(torch.load(model_path))
-        self.n_constraints = len(self.models)
+        self.model = torch.load(path)
+        print('Loaded safety layer model from', path)

@@ -13,8 +13,8 @@ parser.add_argument('--rl_alg', default='DDPG', choices=['DDPG', 'PPO', 'A2C', '
 parser.add_argument('--train_steps', default=100000, type=int, help='RL algorithm training steps.')
 parser.add_argument('--headless', default='True', help='No video output, suitable for running on a server.')
 parser.add_argument('--use_safety_layer', default='True', help='Use a safety layer or not.')
-parser.add_argument('--sl_load_folder', default=None,
-                    help='Folder with safety layer weights. If not given, a new safety layer will be trained.')
+parser.add_argument('--safety_layer_path', default=None,
+                    help='Path with safety layer weights. If not given, a new safety layer will be trained.')
 parser.add_argument('--buffer_path', default='experiments/buffer/buffer.obj', help='Path with buffer collected previously.')
 parser.add_argument('--n_workers', default=1, type=int, help='Number of parallel environments to collect samples from.')
 parser.add_argument('--buffer_size', default=500000, type=int, help='Buffer size (number of samples).')
@@ -34,11 +34,11 @@ if bool(distutils.util.strtobool(args.use_safety_layer)):
     env.config_mode('discrete')
     safe_layer = SafetyLayer(env, buffer_size=args.buffer_size, buffer_path=args.buffer_path, n_epochs=args.n_epochs,
                              batch_size=args.batch_size, n_workers=args.n_workers)
-    if args.sl_load_folder:
-        safe_layer.load(args.sl_load_folder)
+    if args.safety_layer_path:
+        safe_layer.load(args.safety_layer_path)
     else:
         safe_layer.train()
-        safe_layer.save(os.path.join(exp_dir, 'SafetyLayer'))
+        safe_layer.save(os.path.join(exp_dir, 'SafetyLayer.pth'))
 
     safety_status = 'safe'
     env.config_mode('continuous')
