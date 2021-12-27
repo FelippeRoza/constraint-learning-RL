@@ -96,15 +96,15 @@ class SafetyLayer:
         return action_new
 
     def train(self):
-
         loss_fn = torch.nn.MSELoss()
         if not os.path.isfile(self.buffer_path):
             print('Buffer in', self.buffer_path, 'does not exist.')
             self.collect_samples()
-
         dataset = HighwayDataset(buffer_path=self.buffer_path)
-        self._create_model(dataset[1]['observation'].shape[0], dataset[1]['action'].shape[0])
 
+        self._create_model(dataset[1]['observation'].shape[0], dataset[1]['action'].shape[0])
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.model.to(device)
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True, num_workers=0)
 
         for epoch in range(self.n_epochs):
@@ -112,7 +112,8 @@ class SafetyLayer:
             for i_batch, batch in enumerate(dataloader):
 
                 # compute loss
-                action, obs, c, c_next = batch['action'], batch['observation'], batch['c'], batch['c_next']
+                action, obs, c, c_next = batch['action'].to(device), batch['observation'].to(device), \
+                                         batch['c'].to(device), batch['c_next'].to(device)
                 g = self.model(obs)
                 c_next_pred = c + torch.bmm(g.view(g.shape[0], c.shape[1], action.shape[1]),
                                                   action.view(action.shape[0], -1, 1)).squeeze()
