@@ -44,6 +44,8 @@ class SafetyLayer:
         done = True
         a_list, s_list, c_list, c_next_list = [], [], [], []
         for i in tqdm(range(n_samples)):
+            if i > n_samples/2:
+                env.config_mode('continuous')
             if done:
                 observation = env.reset()
             c = env.get_constraint_values()
