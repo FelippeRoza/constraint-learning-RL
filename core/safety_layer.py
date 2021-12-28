@@ -45,13 +45,13 @@ class SafetyLayer:
         a_list, s_list, c_list, c_next_list = [], [], [], []
         for i in tqdm(range(n_samples)):
             if done:
-                observation = self.env.reset()
-            c = self.env.get_constraint_values()
-            observation_next, _, done, _ = self.env.step(self.env.action_space.sample())
-            c_next = self.env.get_constraint_values()
-            self.env.render()
+                observation = env.reset()
+            c = env.get_constraint_values()
+            observation_next, _, done, _ = env.step(env.action_space.sample())
+            c_next = env.get_constraint_values()
+            env.render()
 
-            a_list.append(np.array(list(self.env.vehicle.action.values())))
+            a_list.append(np.array(list(env.vehicle.action.values())))
             s_list.append(observation.flatten())
             c_list.append(c)
             c_next_list.append(c_next)
