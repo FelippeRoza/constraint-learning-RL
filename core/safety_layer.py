@@ -39,7 +39,7 @@ class SafetyLayer:
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
 
     def sample_collection_worker(self, n_samples, config):
-        env = Highway(mode='continuous', safety_layer=None)
+        env = Highway(safety_layer=None)
         env.config.update(config)
         done = True
         a_list, s_list, c_list, c_next_list = [], [], [], []
@@ -126,6 +126,7 @@ class SafetyLayer:
                 loss_list.append(np.asarray(loss.item()))
 
             print('Loss epoch', epoch, ':', np.mean(loss_list))
+        self.model.to("cpu")
 
     def save_buffer(self, buffer):
         os.makedirs(os.path.dirname(self.buffer_path), exist_ok=True)
