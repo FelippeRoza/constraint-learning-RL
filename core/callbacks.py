@@ -29,7 +29,7 @@ class TensorboardCallback(BaseCallback):
                 self.thresh_violations[i] += 1
             self.logger.record('safety/c'+str(i)+'_cum_violations', self.thresh_violations[i])
 
-        if self.env.vehicle.crashed:
+        if self.env.crashed:
             self.collisions += 1
 
         if not self.env.on_road:
